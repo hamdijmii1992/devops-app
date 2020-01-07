@@ -68,7 +68,62 @@ stage('Unit Tests') {
     }
    }
   }
-
+stage('Integration Tests') {
+   when {
+    anyOf { branch 'master'; branch 'develop' }
+   }
+   agent {
+    docker {
+     image 'maven:3.6.0-jdk-8-alpine'
+     args '-v /root/.m2/repository:/root/.m2/repository'
+     reuseNode true
+    }
+   }
+   steps {
+    sh 'mvn verify -Dsurefire.skip=true'
+   }
+   post {
+    always {
+     junit 'target/failsafe-reports/**/*.xml'
+    }
+    success {
+     stash(name: 'artifact', includes: 'target/*.war')
+     stash(name: 'pom', includes: 'pom.xml')
+     // to add artifacts in jenkins pipeline tab (UI)
+     archiveArtifacts 'target/*.war'
+    }
+   }
+  }
+  stage('Code Quality Analysis') {
+   parallel {
+    stage('PMD') {
+     agent {
+      docker {
+       image 'maven:3.6.0-jdk-8-alpine'
+       args '-v /root/.m2/repository:/root/.m2/repository'
+       reuseNode true
+      }
+     }
+     steps {
+      sh ' mvn pmd:pmd'
+      // using pmd plugin
+      step([$class: 'PmdPublisher', pattern: '**/target/pmd.xml'])
+     }
+    }
+    stage('Findbugs') {
+     agent {
+      docker {
+       image 'maven:3.6.0-jdk-8-alpine'
+       args '-v /root/.m2/repository:/root/.m2/repository'
+       reuseNode true
+      }
+     }
+     steps {
+      sh ' mvn findbugs:findbugs'
+      // using findbugs plugin
+      findbugs pattern: '**/target/findbugsXml.xml'
+     }
+    }
   }
   environment {
     NEXUS_VERSION = 'nexus3'
