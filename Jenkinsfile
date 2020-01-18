@@ -171,7 +171,7 @@ pipeline {
 
           }
           steps {
-            sh " mvn sonar:sonar -Dsonar.host.url=$SONARQUBE_URL:$SONARQUBE_PORT"
+            sh " mvn -X -e sonar:sonar -Dsonar.host.url=$SONARQUBE_URL:$SONARQUBE_PORT"
           }
         }
 
