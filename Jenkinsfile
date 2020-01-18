@@ -192,4 +192,3 @@ pipeline {
     skipDefaultCheckout()
   }
 }
-#add stash message
