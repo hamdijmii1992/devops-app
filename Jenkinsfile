@@ -40,7 +40,7 @@ pipeline {
       when {
         anyOf {
           branch 'master'
-          branch 'develop'
+       
         }
 
       }
@@ -75,7 +75,7 @@ pipeline {
           agent {
             docker {
               image 'maven:3.6.3-ibmjava-8-alpine'
-              args '--network container:sonarqube -v /root/.m2/repository:/root/.m2/repository'
+              args '--network=devops -v /root/.m2/repository:/root/.m2/repository'
               reuseNode true
             }
 
