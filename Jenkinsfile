@@ -185,7 +185,7 @@ pipeline {
     NEXUS_URL = 'ec2-52-212-29-159.eu-west-1.compute.amazonaws.com:8081'
     NEXUS_REPOSITORY = 'maven-snapshots'
     NEXUS_CREDENTIAL_ID = 'nexus-credentials'
-    SONARQUBE_URL = 'http://172.19.0.3'
+    SONARQUBE_URL = 'http://172.19.0.2'
     SONARQUBE_PORT = '9000'
   }
   options {
