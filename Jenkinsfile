@@ -62,12 +62,12 @@ pipeline {
     }
 
     stage('Code Quality Analysis') {
-      /*post {
-        always {
-          recordIssues(aggregatingResults: true, tools: [javaDoc(), checkStyle(pattern: '**/target/checkstyle-result.xml'), findBugs(pattern: '**/target/findbugsXml.xml', useRankAsPriority: true), pmdParser(pattern: '**/target/pmd.xml')])
-        }
+      //post {
+        //always {
+       //   recordIssues(aggregatingResults: true, tools: [javaDoc(), checkStyle(pattern: '**/target/checkstyle-result.xml'), findBugs(pattern: '**/target/findbugsXml.xml', useRankAsPriority: true), pmdParser(pattern: '**/target/pmd.xml')])
+        //}
 
-      }*/
+      //}
       parallel {
         
 
