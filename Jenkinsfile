@@ -124,17 +124,21 @@ pipeline {
    }
    steps {
     script {
-
+     try {
+     
      pom = readMavenPom file: "pom.xml"
      repoPath = "${pom.groupId}".replace(".", "/") + "/${pom.artifactId}"
      version = pom.version
      artifactId = pom.artifactId
      withEnv(["ANSIBLE_HOST_KEY_CHECKING=False", "APP_NAME=${artifactId}", "repoPath=${repoPath}", "version=${version}"]) {
-      sh '''
+     sh '''
       
         curl --silent "http://$NEXUS_URL/repository/maven-snapshots/${repoPath}/${version}/maven-metadata.xml" > tmp
        '''
      }
+       } catch (Exception e) {
+       echo "Caught exception: ${e}"
+  }
     }
    }
   }
