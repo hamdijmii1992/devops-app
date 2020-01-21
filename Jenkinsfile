@@ -61,32 +61,6 @@ pipeline {
       }
     }
 
-    stage('Code Quality Analysis') {
-      //post {
-        //always {
-       //   recordIssues(aggregatingResults: true, tools: [javaDoc(), checkStyle(pattern: '**/target/checkstyle-result.xml'), findBugs(pattern: '**/target/findbugsXml.xml', useRankAsPriority: true), pmdParser(pattern: '**/target/pmd.xml')])
-        //}
-
-      //}
-      parallel {
-        
-
-        stage('SonarQube') {
-          agent {
-            docker {
-              image 'maven:3.6.3-ibmjava-8-alpine'
-              args '--network=devops -v /root/.m2/repository:/root/.m2/repository'
-              reuseNode true
-            }
-
-          }
-          steps {
-            sh " mvn -X -e install sonar:sonar -Dsonar.host.url=$SONARQUBE_URL:$SONARQUBE_PORT"
-          }
-        }
-
-      }
-    }
 
       stage('Deploy Artifact To Nexus') {
    when {
@@ -137,6 +111,40 @@ pipeline {
    }
   }
 
+      stage('Deploy to Staging Servers') {
+   when {
+    anyOf { branch 'master'; branch 'develop' }
+   }
+   agent {
+    docker {
+     image 'ahmed24khaled/ansible-management'
+     reuseNode true
+    }
+   }
+   steps {
+    script {
+
+     pom = readMavenPom file: "pom.xml"
+     repoPath = "${pom.groupId}".replace(".", "/") + "/${pom.artifactId}"
+     version = pom.version
+     artifactId = pom.artifactId
+     withEnv(["ANSIBLE_HOST_KEY_CHECKING=False", "APP_NAME=${artifactId}", "repoPath=${repoPath}", "version=${version}"]) {
+      sh '''
+      
+        curl --silent "http://$NEXUS_URL/repository/maven-snapshots/${repoPath}/${version}/maven-metadata.xml" > tmp &&
+        egrep '<value>+([0-9\\-\\.]*)' tmp > tmp2 &&
+        tail -n 1 tmp2 > tmp3 &&
+        tr -d "</value>[:space:]" < tmp3 > tmp4 &&
+        REPO_VERSION=$(cat tmp4) &&
+
+        export APP_SRC_URL="http://${NEXUS_URL}/repository/maven-snapshots/${repoPath}/${version}/${APP_NAME}-${REPO_VERSION}.war" &&
+        ansible-playbook -v -i ./ansible_provisioning/hosts --extra-vars "host=staging" ./ansible_provisioning/playbook.yml 
+
+       '''
+     }
+    }
+   }
+  }
   }
   environment {
     NEXUS_VERSION = 'nexus3'
