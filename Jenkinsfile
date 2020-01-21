@@ -118,6 +118,7 @@ pipeline {
    agent {
     docker {
      image 'ahmed24khaled/ansible-management'
+     args '--network=devops'
      reuseNode true
     }
    }
