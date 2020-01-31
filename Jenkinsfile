@@ -163,8 +163,7 @@ pipeline {
    post {
     always {
      // using warning next gen plugin
-     //recordIssues aggregatingResults: true, tools: [javaDoc(), checkStyle(patt
-     recordIssues aggregatingResults: true, tools: [checkStyle(pattern: '**/target/checkstyle-result.xml'), findBugs(pattern: '**/target/findbugsXml.xml', useRankAsPriority: true), pmdParser(pattern: '**/target/pmd.xml')]
+     recordIssues aggregatingResults: true, tools: [javaDoc(), checkStyle(pattern: '**/target/checkstyle-result.xml'), findBugs(pattern: '**/target/findbugsXml.xml', useRankAsPriority: true), pmdParser(pattern: '**/target/pmd.xml')]
     }
    }
   }
@@ -225,7 +224,7 @@ pipeline {
    }
    agent {
     docker {
-     image 'ahmed24khaled/ansible-management'
+     image 'hamdi/ansible-image:v4'
      args '--network=devops'
      reuseNode true
     }
@@ -238,16 +237,19 @@ pipeline {
      repoPath = "${pom.groupId}".replace(".", "/") + "/${pom.artifactId}"
      version = pom.version
      artifactId = pom.artifactId
-     withEnv(["ANSIBLE_HOST_KEY_CHECKING=False", "APP_NAME=${artifactId}", "repoPath=${repoPath}", "version=${version}"]) {
+     withEnv(["ANSIBLE_HOST_KEY_CHECKING=False", "NEXUS_USERNAME=${NEXUS_USERNAME}", "NEXUS_PASSWORD=${NEXUS_PASSWORD}", "APP_NAME=${artifactId}", "repoPath=${repoPath}", "version=${version}"]) {
      sh '''
-      
-        curl --silent "http://$NEXUS_URL/repository/maven-snapshots/${repoPath}/${version}/maven-metadata.xml" > tmp &&
+
+        curl --silent "http://$NEXUS_URL/repository/maven-snapshots/${repoPath}/${version}/maven-metadata.xml" -u "${NEXUS_USERNAME}:${NEXUS_PASSWORD}" > tmp &&
         egrep '<value>+([0-9\\-\\.]*)' tmp > tmp2 &&
         tail -n 1 tmp2 > tmp3 &&
         tr -d "</value>[:space:]" < tmp3 > tmp4 &&
         REPO_VERSION=$(cat tmp4) &&
+        export nexus_username=admin &&
+        export nexus_password=admin &&
         export APP_SRC_URL="http://${NEXUS_URL}/repository/maven-snapshots/${repoPath}/${version}/${APP_NAME}-${REPO_VERSION}.war" &&
-        ansible-playbook -v -i ./ansible_provisioning/hosts --extra-vars "host=staging" ./ansible_provisioning/playbook.yml 
+        ansible-playbook -v -i /ansible_provisioning/hosts --extra-vars "host=staging" /ansible_provisioning/playbook.yml
+
        '''
      }
        } catch (Exception e) {
@@ -265,6 +267,8 @@ pipeline {
     NEXUS_CREDENTIAL_ID = 'nexus-credentials'
     SONARQUBE_URL = 'http://sonarqube'
     SONARQUBE_PORT = '9000'
+    NEXUS_USERNAME = 'admin'
+    NEXUS_PASSWORD = 'admin'
   }
   options {
     skipDefaultCheckout()
